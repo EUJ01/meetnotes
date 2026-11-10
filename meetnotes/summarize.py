@@ -114,3 +114,20 @@ def summarize(text, cfg, chat=llm.chat, log=print, background="", notes_out=None
         if gaps:
             raise SummaryError(f"the model's reply still misses {', '.join(gaps)}", reply)
     return body
+
+
+TRANSLATE_CHARS = 4000  # short parts: a small model translates and fixes misheard words best with local context
+
+
+def translate(text, cfg, chat=llm.chat, log=print, background=""):
+    """The transcript in clean output_language, part by part. Small models reason far better over clean English
+    than over noisy speech-recognition text in another script (the idea behind LLM error correction of ASR)."""
+    lang = cfg.get("output_language") or "English"
+    ctx = background_block(background)
+    parts = split(text, TRANSLATE_CHARS, overlap=0)
+    out = []
+    for i, part in enumerate(parts, 1):
+        log(f"translating part {i}/{len(parts)}")
+        sys_msg = prompt("translate", part=i, parts=len(parts), output_language=lang, context=ctx)
+        out.append(clean_reply(chat(cfg, [{"role": "system", "content": sys_msg}, {"role": "user", "content": part}])))
+    return "\n\n".join(out)

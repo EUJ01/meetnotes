@@ -89,6 +89,33 @@ def _target(path, project, date, ws):
     return meta, text, date, update.path_for(ws / "projects", project, date, update.source_id(meta))
 
 
+def _wants_translation(llm_cfg, meta):
+    """auto: translate when the transcript is in a known language other than English and the output is English."""
+    t = llm_cfg.get("translate", "auto")
+    if t in (True, False):
+        return t
+    out = (llm_cfg.get("output_language") or "English").strip().lower()
+    return meta.get("language") not in (None, "", "en", "unknown") and out in ("english", "en")
+
+
+def _translated(path, meta, text, cfg, background):
+    """The translation, cached next to the transcript as <name>.translated.md. It is reused while the transcript
+    text and the LLM model are the same."""
+    import hashlib
+    from meetnotes import summarize
+    digest = hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
+    cache = Path(path).with_name(Path(path).stem + ".translated.md")
+    if cache.exists():
+        old, english = transcript.read(cache)
+        if old.get("translated_from") == digest and old.get("translated_by") == cfg["llm"]["model"]:
+            log(f"using the saved translation: {cache}")
+            return english
+    english = summarize.translate(text, cfg["llm"], log=log, background=background)
+    transcript.write(cache, {**meta, "translated_from": digest, "translated_by": cfg["llm"]["model"]}, english)
+    log(f"translation saved: {cache}")
+    return english
+
+
 def do_summarize(path, project, cfg, ws, date=None):
     from meetnotes import summarize
     meta, text, date, dest = _target(path, project, date, ws)
@@ -100,12 +127,14 @@ def do_summarize(path, project, cfg, ws, date=None):
     if prev:
         background += "\nThe previous update of this project, for context only:\n" + prev
     try:
-        body = summarize.summarize(text, cfg["llm"], log=log, background=background,
+        work = _translated(path, meta, text, cfg, background) if _wants_translation(cfg["llm"], meta) else text
+        body = summarize.summarize(work, cfg["llm"], log=log, background=background,
                                    notes_out=dest.with_name(dest.name[:-3] + ".minutes.md"))
         if cfg["llm"]["review"]:
             from meetnotes import agent
+            dest.parent.mkdir(parents=True, exist_ok=True)
             dest.with_name(dest.name[:-3] + ".draft.md").write_text(body + "\n", encoding="utf-8")
-            body = agent.review(body, text, cfg["llm"], background=background, log=log)
+            body = agent.review(body, work, cfg["llm"], background=background, log=log)
     except summarize.SummaryError as e:
         if e.reply:
             failed = dest.with_name(dest.name + ".failed.md")

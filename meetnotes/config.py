@@ -25,6 +25,7 @@ DEFAULTS = {
         "timeout": 300,
         "max_input_chars": 12000,  # longer transcripts are summarized in parts first
         "output_language": "English",
+        "translate": "auto",  # auto: translate a transcript that is not in English first (when output is English)
         "review": True,  # a review agent checks the draft against the transcript with tools (needs tool calling)
     },
     # per project: context = what the project is about, terms = names the speech model mishears. Both help the LLM
@@ -48,6 +49,8 @@ def _merge(base, over, where=""):
                     raise Fail("config: each [projects.<name>] table takes only context = \"...\" and terms = [...]", 2)
         if key == "chats" and not isinstance(value, dict):
             raise Fail("config: [publish.telegram.chats] must be a table of project = \"chat id\"", 2)
+        if key == "translate" and value not in (True, False, "auto"):
+            raise Fail("config: [llm] translate must be true, false or \"auto\"", 2)
         if key == "batch" and (not isinstance(value, int) or value < 1):
             raise Fail("config: [transcribe] batch must be a whole number, 1 or more", 2)
         if isinstance(base[key], dict) and key not in ("chats", "projects"):

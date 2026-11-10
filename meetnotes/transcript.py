@@ -15,7 +15,8 @@ the transcript text ...
 import os
 from pathlib import Path
 
-FIELDS = ["source", "source_path", "size", "recorded", "duration", "limit", "language", "model"]
+FIELDS = ["source", "source_path", "size", "recorded", "duration", "limit", "language", "model",
+          "translated_from", "translated_by"]  # the last two: on a translation, the hash of the text and the LLM
 
 
 def write(path, meta, text):
