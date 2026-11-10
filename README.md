@@ -103,10 +103,32 @@ api_key_env = ""            # for a cloud API: the NAME of the environment varia
 - **Ollama** silently cuts prompts longer than its context window. Raise it, for example with the environment variable `OLLAMA_CONTEXT_LENGTH=16384`, or lower `max_input_chars`.
 - Reasoning models are fine: their `<think>` blocks are removed. If the reasoning eats the whole answer, raise `max_tokens`.
 - The reply must have the three sections. If one is missing, the tool asks once more. If it still fails, it saves the raw reply as `.failed.md` and writes no update file.
+- Replies are streamed, so `timeout` is the longest silence allowed, not the length of the whole answer. A slow local model can write for 10 minutes. A timeout is not retried, because the server may still be working on the first request.
 - The prompt is [meetnotes/prompts/update.md](meetnotes/prompts/update.md). It tells the model never to invent owners or deadlines, to keep hedges, and to mark unsure points with `(?)`.
 - The update's header (source, date, length, models) is written by the tool, not the LLM.
 
 **No API?** Use a coding agent: `meetnotes new-update transcripts/meeting.md --project weekly` creates the file with empty sections, and the agent fills them in from the same prompt. Point your agent at [AGENTS.md](AGENTS.md).
+
+### The review agent
+
+After the first draft, a review agent checks it against the transcript. It has two tools: `search_transcript` (find passages by words) and `read_part` (read one part in full). It removes to-dos the transcript does not support, adds actions and time frames the draft missed, puts the work in the agreed order, and fixes misheard names.
+
+- It needs a model and server with tool calling (LM Studio, Ollama, llama.cpp, vLLM and the cloud APIs support it for most recent models).
+- It uses at most 6 tool calls. If anything goes wrong (no tool support, a bad reply), the draft is kept: the review never makes the result worse.
+- The draft before the review is kept as `.draft.md`, next to the update. Turn the agent off with `review = false` in `[llm]`.
+- Why: summarizing in parts loses links between parts, and each merge step can add made-up content. Giving the model the original text back at the end reduces that (Ou and Lapata, ACL 2025).
+
+### Help the model with context (optional)
+
+Speech recognition mishears names and jargon. Tell the model what a project is about and which names come up, once per project:
+
+```toml
+[projects.weekly]
+context = "Weekly sync of the mobile app team."
+terms = ["Kotlin", "Firebase", "Priya", "Q3 roadmap"]
+```
+
+The previous update of the same project is also given to the model as context, so a follow-up meeting can refer to last week's tasks. For long meetings, the minutes taken from each part are kept next to the update as `.minutes.md`, so you can see where a point came from.
 
 ## Update files
 
@@ -153,6 +175,14 @@ remote = "gdrive:meeting-notes"
 - `... belongs to another recording or length`: a transcript with that name exists. Use `--out` or `--force`.
 - LM Studio on Windows says `listen EACCES: permission denied 127.0.0.1:1234`: Windows reserved that port (Hyper-V, WSL and Docker reserve port ranges). Check with `netsh interface ipv4 show excludedportrange protocol=tcp`, pick a port outside the ranges (for example 8765) in LM Studio's server settings, and use it in `base_url`.
 - Windows with an AMD GPU: the ROCm runtime can hang when Python exits. meetnotes ends its own process after the work is done to avoid this.
+
+## Security
+
+- Secrets (API keys, the bot token) come only from environment variables. `config.toml` names the variable, never the value.
+- An API key is sent only over https, or to a server on your own machine. Redirects are never followed, so a key cannot be passed on to another host.
+- Speech models load as safetensors weights, with no remote code. Use model ids you trust.
+- Recordings stay on your machine. The transcript text goes to the LLM endpoint you configure, and the update file goes to your publish targets. With a local LLM, nothing leaves your machine except what you publish.
+- A transcript is untrusted text. Someone in a meeting could say "ignore your instructions". The worst result is a wrong update file, so read it before you publish.
 
 ## Development
 

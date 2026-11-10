@@ -27,6 +27,7 @@ All paths are relative to the workspace (`workspace` in `config.toml`, default: 
 `meetnotes summarize <transcript> --project <name> [--date YYYY-MM-DD]`. It prints the update file path.
 
 - If it fails, read the error. Unreachable server: start the server or fix `[llm] base_url`. A reply with missing sections: the raw reply is saved next to the update path as `.failed.md`.
+- Next to the update file it keeps `.minutes.md` (the minutes of each part, for long meetings) and `.draft.md` (the update before the review agent ran). Use them to see where a point came from.
 
 ### Route B: you write the update (no API needed)
 
@@ -51,4 +52,4 @@ The date comes from `--date`, else from the recording's file date (`recorded` in
 - Python 3.11+. The core uses only the standard library. Speech-to-text needs PyTorch and `pip install .[asr]`.
 - Run the tests before and after a change: `python -m unittest discover -s tests -t .` (no GPU, network or ffmpeg needed).
 - Keep secrets out of files: tokens and keys come from environment variables named in the config. `tests/test_secrets.py` fails on a token-like string.
-- Layout: `meetnotes/cli.py` (commands), `asr/` (speech models), `audio.py` (ffmpeg chunking), `summarize.py` + `llm.py` (LLM step), `update.py` (file names, header), `publish/` (Telegram, folder, rclone).
+- Layout: `meetnotes/cli.py` (commands), `asr/` (speech models), `audio.py` (ffmpeg chunking), `summarize.py` + `llm.py` (LLM step, streamed, with tool calls), `agent.py` (the review agent and its two tools), `prompts/` (update, notes, review), `update.py` (file names, header), `publish/` (Telegram, folder, rclone).

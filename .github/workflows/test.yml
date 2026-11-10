@@ -4,6 +4,9 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read  # the tests only read the code
+
 jobs:
   unit:
     runs-on: ${{ matrix.os }}

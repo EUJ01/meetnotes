@@ -92,6 +92,26 @@ class Chat(unittest.TestCase):
             llm.chat({"model": "m", "base_url": ""}, [])
         self.assertEqual(e.exception.code, 2)
 
+    def test_stream(self):
+        events = [{"choices": [{"delta": {"reasoning_content": "hmm"}}]}, {"choices": [{"delta": {"content": "Hel"}}]},
+                  {"choices": [{"delta": {"content": "lo"}, "finish_reason": "stop"}]}]
+        sse = "".join(f"data: {json.dumps(e)}\n\n" for e in events).encode() + b"data: [DONE]\n\n"
+        srv = FakeServer([(200, sse, None)])
+        try:
+            self.assertEqual(llm.chat(cfg(srv.url), [], sleep=self.sleep), "Hello")
+            self.assertTrue(json.loads(srv.requests[0]["body"])["stream"])
+        finally:
+            srv.close()
+
+    def test_stream_cut_off(self):
+        sse = b'data: {"choices": [{"delta": {"content": "## Sum"}, "finish_reason": "length"}]}\n\ndata: [DONE]\n\n'
+        srv = FakeServer([(200, sse, None)])
+        try:
+            with self.assertRaises(llm.LLMError):
+                llm.chat(cfg(srv.url), [], sleep=self.sleep)
+        finally:
+            srv.close()
+
     def test_models(self):
         srv = FakeServer([(200, {"data": [{"id": "a"}, {"id": "m"}]}, None)])
         try:

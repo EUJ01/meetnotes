@@ -7,6 +7,7 @@ import urllib.request
 import uuid
 from pathlib import Path
 
+from meetnotes.llm import OPEN
 from meetnotes.publish import PublishError
 
 API = "https://api.telegram.org"
@@ -32,7 +33,7 @@ def _multipart(fields, files):
 class Telegram:
     name = "telegram"
 
-    def __init__(self, token, chats, api=API, opener=urllib.request.urlopen):
+    def __init__(self, token, chats, api=API, opener=OPEN):
         self.token, self.chats, self.api, self.opener = token, {k: str(v) for k, v in chats.items()}, api, opener
 
     def wants(self, project):

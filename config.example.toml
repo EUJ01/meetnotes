@@ -21,9 +21,15 @@ model = "qwen3-8b"                             # the model name your server or p
 api_key_env = ""                               # e.g. "OPENAI_API_KEY": the NAME of the variable, not the key
 max_tokens = 4000
 # temperature = 0.2                            # sent only when set: some reasoning models reject it
-timeout = 300                                  # seconds per request
+timeout = 300                                  # the longest silence allowed, in seconds (replies are streamed)
 max_input_chars = 12000                        # longer transcripts are noted part by part first
 output_language = "English"
+review = true                                  # a review agent checks the draft against the transcript (needs tool calling)
+
+# Optional, per project: what the project is about and names the speech model mishears.
+# [projects.weekly]
+# context = "Weekly sync of the mobile app team."
+# terms = ["Kotlin", "Firebase", "Q3 roadmap"]
 
 [publish.telegram]
 token_env = "TELEGRAM_BOT_TOKEN"               # the variable that holds the bot token

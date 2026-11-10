@@ -16,9 +16,10 @@ class FakeServer:
                 length = int(self.headers.get("Content-Length") or 0)
                 outer.requests.append({"path": self.path, "headers": dict(self.headers), "body": self.rfile.read(length)})
                 status, body, headers = outer.replies.pop(0) if len(outer.replies) > 1 else outer.replies[0]
-                data = json.dumps(body).encode()
+                raw = isinstance(body, bytes)  # raw bytes: sent as they are, e.g. a server-sent event stream
+                data = body if raw else json.dumps(body).encode()
                 self.send_response(status)
-                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Type", "text/event-stream" if raw else "application/json")
                 self.send_header("Content-Length", str(len(data)))
                 for k, v in (headers or {}).items():
                     self.send_header(k, v)

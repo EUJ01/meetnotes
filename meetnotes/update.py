@@ -71,3 +71,13 @@ def write(path, text):
     tmp = path.with_name(path.name + ".tmp")
     tmp.write_text(text.rstrip() + "\n", encoding="utf-8")
     os.replace(tmp, path)
+
+
+def previous(projects_dir, project, date, limit=6000):
+    """The body of the latest update before this date, as context for the next one ('' if none)."""
+    older = [p for p in (Path(projects_dir) / project).glob("*_update.md") if p.name.split("_")[1] < date.isoformat()]
+    if not older:
+        return ""
+    last = min(older, key=lambda p: p.name)  # the smallest key is the newest date
+    body = last.read_text(encoding="utf-8").split("## Summary", 1)
+    return ("## Summary" + body[1])[:limit].strip() if len(body) == 2 else ""

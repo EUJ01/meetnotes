@@ -92,8 +92,20 @@ def _target(path, project, date, ws):
 def do_summarize(path, project, cfg, ws, date=None):
     from meetnotes import summarize
     meta, text, date, dest = _target(path, project, date, ws)
+    proj = cfg["projects"].get(project, {})
+    background = proj.get("context", "")
+    if proj.get("terms"):
+        background += "\nTerms that come up in this project (the speech model often mishears them): " + ", ".join(proj["terms"])
+    prev = update.previous(ws / "projects", project, date)
+    if prev:
+        background += "\nThe previous update of this project, for context only:\n" + prev
     try:
-        body = summarize.summarize(text, cfg["llm"], log=log)
+        body = summarize.summarize(text, cfg["llm"], log=log, background=background,
+                                   notes_out=dest.with_name(dest.name[:-3] + ".minutes.md"))
+        if cfg["llm"]["review"]:
+            from meetnotes import agent
+            dest.with_name(dest.name[:-3] + ".draft.md").write_text(body + "\n", encoding="utf-8")
+            body = agent.review(body, text, cfg["llm"], background=background, log=log)
     except summarize.SummaryError as e:
         if e.reply:
             failed = dest.with_name(dest.name + ".failed.md")

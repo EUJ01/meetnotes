@@ -97,5 +97,32 @@ class Review(unittest.TestCase):
             srv.close()
 
 
+class Security(unittest.TestCase):
+    def test_redirect_is_not_followed(self):
+        import os
+        os.environ["MEETNOTES_TEST_KEY"] = "sk-secret"
+        target = FakeServer([(200, {"choices": [{"message": {"content": "x"}}]}, None)])
+        srv = FakeServer([(302, {}, {"Location": target.url + "/v1/chat/completions"})])
+        try:
+            with self.assertRaises(llm.LLMError) as e:
+                llm.chat({"base_url": srv.url, "model": "m", "api_key_env": "MEETNOTES_TEST_KEY"}, [], sleep=lambda s: None)
+            self.assertIn("redirect", str(e.exception))
+            self.assertEqual(target.requests, [])  # the key never reached the other server
+        finally:
+            srv.close()
+            target.close()
+            del os.environ["MEETNOTES_TEST_KEY"]
+
+    def test_no_key_over_plain_http(self):
+        import os
+        os.environ["MEETNOTES_TEST_KEY"] = "sk-secret"
+        try:
+            with self.assertRaises(llm.LLMError) as e:
+                llm.chat({"base_url": "http://example.com/v1", "model": "m", "api_key_env": "MEETNOTES_TEST_KEY"}, [])
+            self.assertIn("plain http", str(e.exception))
+        finally:
+            del os.environ["MEETNOTES_TEST_KEY"]
+
+
 if __name__ == "__main__":
     unittest.main()

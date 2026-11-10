@@ -25,7 +25,11 @@ DEFAULTS = {
         "timeout": 300,
         "max_input_chars": 12000,  # longer transcripts are summarized in parts first
         "output_language": "English",
+        "review": True,  # a review agent checks the draft against the transcript with tools (needs tool calling)
     },
+    # per project: context = what the project is about, terms = names the speech model mishears. Both help the LLM
+    # read the transcript. [projects.weekly] context = "..." terms = ["GRPO", "LangChain"]
+    "projects": {},
     "publish": {
         "telegram": {"token_env": "TELEGRAM_BOT_TOKEN", "chats": {}},  # chats: project = "chat id"
         "folder": {"path": ""},  # for example G:/My Drive/meeting-notes (Google Drive for desktop)
@@ -38,11 +42,15 @@ def _merge(base, over, where=""):
     for key, value in over.items():
         if key not in base:
             raise Fail(f"config: unknown setting '{where}{key}'", 2)
+        if key == "projects":
+            for name, proj in (value.items() if isinstance(value, dict) else [(None, None)]):
+                if not isinstance(proj, dict) or set(proj) - {"context", "terms"}:
+                    raise Fail("config: each [projects.<name>] table takes only context = \"...\" and terms = [...]", 2)
         if key == "chats" and not isinstance(value, dict):
             raise Fail("config: [publish.telegram.chats] must be a table of project = \"chat id\"", 2)
         if key == "batch" and (not isinstance(value, int) or value < 1):
             raise Fail("config: [transcribe] batch must be a whole number, 1 or more", 2)
-        if isinstance(base[key], dict) and key != "chats":
+        if isinstance(base[key], dict) and key not in ("chats", "projects"):
             if not isinstance(value, dict):
                 raise Fail(f"config: '{where}{key}' must be a table", 2)
             _merge(base[key], value, f"{where}{key}.")

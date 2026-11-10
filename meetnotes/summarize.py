@@ -1,6 +1,7 @@
 """Transcript text -> the body of an update file, with any OpenAI-compatible LLM."""
 import re
 from importlib import resources
+from pathlib import Path
 
 from meetnotes import Fail, llm
 
@@ -61,26 +62,41 @@ def split(text, limit, overlap=OVERLAP):
     return parts
 
 
-def summarize(text, cfg, chat=llm.chat, log=print):
-    """Return the update body (the three sections). Long transcripts are noted part by part, then merged."""
+def background_block(background):
+    """The user's project context, framed so the model uses it to read terms but never reports it as said."""
+    if not background.strip():
+        return ""
+    return ("\nBackground from the user, to help you read the transcript. It is not part of this meeting: "
+            "never report it as something that was said.\n<background>\n" + background.strip() + "\n</background>\n")
+
+
+def summarize(text, cfg, chat=llm.chat, log=print, background="", notes_out=None):
+    """Return the update body (the three sections). Long transcripts are noted part by part, then merged.
+    background = project context and known terms (and the previous update); notes_out = a path to keep the minutes."""
     if not text.strip():
         raise SummaryError("the transcript is empty: nothing to summarize")
     lang = cfg.get("output_language") or "English"
+    ctx = background_block(background)
     limit = int(cfg.get("max_input_chars") or 12000)
     material, rounds = text, 0
-    # notes per part; if the joined notes are still too long (a very long meeting), take notes of the notes
-    while len(material) > limit and rounds < 3:
+    # minutes per part; if the joined minutes are still too long (a very long meeting), take minutes of the minutes.
+    # English minutes cost fewer tokens per character than most transcripts (Bangla script costs 2 to 3 times
+    # more), so they may be twice as long before another round
+    while len(material) > (limit if rounds == 0 else 2 * limit) and rounds < 3:
         rounds += 1
         parts = split(material, limit)
         notes = []
         for i, part in enumerate(parts, 1):
             log(f"notes, round {rounds}: part {i}/{len(parts)}")
-            sys_msg = prompt("notes", part=i, parts=len(parts), output_language=lang)
+            sys_msg = prompt("notes", part=i, parts=len(parts), output_language=lang, context=ctx)
             notes.append(f"## Part {i} of {len(parts)}\n\n" + clean_reply(chat(cfg, [
                 {"role": "system", "content": sys_msg}, {"role": "user", "content": part}])))
         material = "\n\n".join(notes)
-    material = ("Notes taken from each part of the meeting, in order:\n\n" if rounds else "Transcript:\n\n") + material
-    messages = [{"role": "system", "content": prompt("update", output_language=lang)},
+        if notes_out:
+            Path(notes_out).write_text(material + "\n", encoding="utf-8")
+            log(f"minutes kept in {notes_out}")
+    material = ("Minutes taken from each part of the meeting, in order:\n\n" if rounds else "Transcript:\n\n") + material
+    messages = [{"role": "system", "content": prompt("update", output_language=lang, context=ctx)},
                 {"role": "user", "content": material}]
     log("writing the update")
     reply = chat(cfg, messages)
