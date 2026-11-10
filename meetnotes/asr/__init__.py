@@ -12,6 +12,8 @@ def _torch():
     try:
         import torch
         import transformers
+        import numpy  # noqa: F401
+        import soundfile  # noqa: F401
         transformers.logging.set_verbosity_error()  # hide deprecation chatter; real errors still raise
     except ImportError as e:
         raise Fail(f"speech-to-text needs PyTorch and the [asr] extra ({e.name} is missing). "

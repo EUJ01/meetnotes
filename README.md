@@ -46,7 +46,7 @@ meetnotes run meeting.mp4 --project weekly --date 2026-10-20
 That transcribes `meeting.mp4`, writes `projects/weekly/79738979_2026-10-20_update.md`, and publishes it if a target is set. Steps one by one:
 
 ```
-meetnotes transcribe meeting.mp4 --seconds 60      # a quick test on the first minute
+meetnotes transcribe meeting.mp4 --seconds 60      # a quick test: transcripts/meeting.first60s.md
 meetnotes transcribe meeting.mp4                   # -> transcripts/meeting.md
 meetnotes summarize transcripts/meeting.md --project weekly --date 2026-10-20
 meetnotes publish --dry-run
@@ -65,7 +65,8 @@ The first run downloads the speech model (about 1.6 GB for Whisper, 1.5 GB for t
 - `--language auto` (the default) detects the language once, from the loudest of the first chunks. Then it keeps that language for the whole file, so code-mixed speech does not flip between languages. Bangla switches to the Bangla model.
 - The audio is cut at pauses into chunks of 20 seconds or less. Silent chunks are skipped, because Whisper invents text on silence.
 - On a GPU out-of-memory error the batch size halves itself. Set it with `--batch`.
-- A transcript that exists is not made again (an hour of GPU time). Use `--force` to redo it.
+- A transcript that exists is not made again (an hour of GPU time). Use `--force` to redo it, for example with another `--language` or `--model`.
+- `--seconds N` transcribes only the first N seconds, into its own file. `run --seconds` stops before publishing.
 
 Measured on an AMD Radeon RX 9060 XT (16 GB): 63.5 minutes of Bangla audio in 11.2 minutes with the Bangla model. On a mixed Bangla-English test clip, the Bangla model reached 22.4% word error rate, and Whisper large-v3 98.1% (most speech lost).
 
@@ -112,6 +113,7 @@ api_key_env = ""            # for a cloud API: the NAME of the environment varia
 
 - The date comes from `--date`, else from the recording's file date. A downloaded recording has the download date, so pass `--date`.
 - A second meeting on the same day gets `<key>_<date>_2_update.md`. Running the same recording again replaces its own file.
+- The header names the recording's file name (never its folder). Rename a file such as `salary review.mp4` before you publish its update.
 
 ## Publishing
 
@@ -146,7 +148,7 @@ remote = "gdrive:meeting-notes"
 
 - Start with `meetnotes doctor`. Each failed check prints a fix.
 - `PyTorch ... CPU-only` on a machine with a GPU: reinstall PyTorch for your GPU (Install, step 3).
-- The transcript is in the wrong language: pass `--language`.
+- The transcript is in the wrong language: run it again with `--language <code> --force`.
 - `... belongs to another recording or length`: a transcript with that name exists. Use `--out` or `--force`.
 - Windows with an AMD GPU: the ROCm runtime can hang when Python exits. meetnotes ends its own process after the work is done to avoid this.
 

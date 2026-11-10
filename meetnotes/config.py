@@ -38,6 +38,10 @@ def _merge(base, over, where=""):
     for key, value in over.items():
         if key not in base:
             raise Fail(f"config: unknown setting '{where}{key}'", 2)
+        if key == "chats" and not isinstance(value, dict):
+            raise Fail("config: [publish.telegram.chats] must be a table of project = \"chat id\"", 2)
+        if key == "batch" and (not isinstance(value, int) or value < 1):
+            raise Fail("config: [transcribe] batch must be a whole number, 1 or more", 2)
         if isinstance(base[key], dict) and key != "chats":
             if not isinstance(value, dict):
                 raise Fail(f"config: '{where}{key}' must be a table", 2)

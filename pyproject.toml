@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]  # 77+ reads the SPDX license string below
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -13,7 +13,8 @@ dependencies = []  # the CLI, the LLM step and publishing use only the standard 
 
 [project.optional-dependencies]
 # Speech-to-text. Install PyTorch for your GPU FIRST (see README): pip would pick a CPU-only build on Windows.
-asr = ["transformers>=5.18", "accelerate", "soundfile", "librosa", "numpy"]
+# librosa: transformers uses it to load the audio files the Qwen3-ASR processor is given by path
+asr = ["transformers>=5.18", "soundfile", "librosa", "numpy"]
 
 [project.scripts]
 meetnotes = "meetnotes.cli:entry"

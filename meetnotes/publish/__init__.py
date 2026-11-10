@@ -1,6 +1,7 @@
 """Send new or changed update files to every configured target. The ledger (.meetnotes/ledger.tsv) keeps one row
-per file and target: path, sha256, target, message id. Each target catches up on its own, so one failing target
-never blocks another. Deleting a local file does not delete the remote copy."""
+per file and destination: path, sha256, destination, message id. The destination includes the folder, remote or
+chat id, so a changed setting sends the files to the new place. Each destination catches up on its own: one failing
+target never blocks another. Deleting a local file does not delete the remote copy."""
 import hashlib
 import os
 from pathlib import Path
@@ -22,15 +23,31 @@ class Ledger:
                 if len(f) == 4:
                     self.rows[(f[0], f[2])] = (f[1], f[3])
 
-    def get(self, rel, target):
-        return self.rows.get((rel, target))
+    def get(self, rel, dest):
+        return self.rows.get((rel, dest))
 
-    def set(self, rel, target, digest, msg_id):
-        self.rows[(rel, target)] = (digest, msg_id or "")
+    def set(self, rel, dest, digest, msg_id):
+        self.rows[(rel, dest)] = (digest, msg_id or "")
         self.path.parent.mkdir(parents=True, exist_ok=True)
         tmp = self.path.with_name(self.path.name + ".tmp")
         tmp.write_text("".join(f"{r}\t{d}\t{t}\t{m}\n" for (r, t), (d, m) in sorted(self.rows.items())), encoding="utf-8")
         os.replace(tmp, self.path)
+
+
+class Unavailable:
+    """A configured target that cannot work (for example no token): every send fails, the others still run."""
+
+    def __init__(self, name, reason):
+        self.name, self.reason = name, reason
+
+    def wants(self, project):
+        return True
+
+    def dest(self, project):
+        return self.name
+
+    def send(self, *a):
+        raise PublishError(self.reason)
 
 
 def sha256(path):
@@ -43,15 +60,21 @@ def update_files(projects_dir, project=None):
     return sorted(Path(projects_dir).glob(pattern), key=lambda p: p.name, reverse=True)
 
 
+def is_empty(text):
+    """An update made by new-update that nobody filled in yet: only the header, headings and blank lines."""
+    body = text.split("## Summary", 1)[-1]
+    return not any(line.strip() and not line.startswith("#") for line in body.splitlines())
+
+
 def targets(cfg):
     """The configured targets, in order: telegram, folder, rclone."""
     from meetnotes.publish import folder, telegram
     out = []
     t = cfg["telegram"]
-    if t.get("chats") and os.environ.get(t.get("token_env") or ""):
-        out.append(telegram.Telegram(os.environ[t["token_env"]], t["chats"]))
-    elif t.get("chats"):
-        raise PublishError(f"Telegram chats are set but the environment variable {t.get('token_env')} is empty", 2)
+    if t.get("chats"):
+        token = os.environ.get(t.get("token_env") or "", "").strip()
+        out.append(telegram.Telegram(token, t["chats"]) if token else
+                   Unavailable("telegram", f"the environment variable {t.get('token_env')} (the bot token) is empty"))
     if cfg["folder"].get("path"):
         out.append(folder.Folder(cfg["folder"]["path"]))
     if cfg["rclone"].get("remote"):
@@ -71,26 +94,30 @@ def publish(cfg, workspace, project=None, dry_run=False, log=print, chosen=None)
     for f in update_files(projects, project):
         rel = f.relative_to(projects).as_posix()
         proj, date = f.parent.name, f.name.split("_")[1]
+        if is_empty(f.read_text(encoding="utf-8")):
+            log(f"skipped {rel}: its sections are still empty")
+            continue
         digest = sha256(f)
         for t in tlist:
-            old = ledger.get(rel, t.name)
-            if old and old[0] == digest:
-                continue
             if not t.wants(proj):
                 if (t.name, proj) not in skipped:
                     skipped.add((t.name, proj))
                     log(f"{t.name}: no chat id for project '{proj}' in the config, skipped")
                 continue
+            dest = t.dest(proj)
+            old = ledger.get(rel, dest)
+            if old and old[0] == digest:
+                continue
             if dry_run:
-                log(f"would {'update' if old else 'send'} {rel} -> {t.name}")
+                log(f"would {'update' if old else 'send'} {rel} -> {dest}")
                 continue
             try:
                 msg_id, did = t.send(f, proj, date, old[1] if old else "")
-            except PublishError as e:
+            except (PublishError, OSError, ValueError) as e:  # a disk, permission or protocol error: count it, go on
                 log(f"{t.name}: {rel}: {e}")
                 failed += 1
                 continue
-            ledger.set(rel, t.name, digest, msg_id)
+            ledger.set(rel, dest, digest, msg_id)
             log(f"{t.name}: {did} {rel}")
             sent += 1
     if not sent and not failed and not dry_run:

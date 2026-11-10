@@ -2,7 +2,8 @@
 import math
 import re
 
-LOOP = re.compile(r"(\S+(?:\s+\S+){0,11}?)(?:\s+\1){3,}")  # a 1-12 word phrase repeated 4+ times in a row
+# a 1-12 word phrase repeated 4+ times in a row, whole words only ("no no no no nothing" keeps "nothing")
+LOOP = re.compile(r"(?<!\S)(\S+(?:\s+\S+){0,11}?)(?:\s+\1){3,}(?=\s|$)")
 
 
 def collapse_loops(text):

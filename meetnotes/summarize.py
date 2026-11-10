@@ -26,6 +26,8 @@ def clean_reply(text):
     """Drop reasoning blocks (Qwen3, DeepSeek-R1 put <think>...</think> in the content), a wrapping code fence,
     and a leading title the model added despite the prompt."""
     text = re.sub(r"<think>.*?</think>", "", text, flags=re.S).strip()
+    if "</think>" in text:  # some servers strip the opening tag and send "reasoning</think>answer"
+        text = text.rsplit("</think>", 1)[1].strip()
     if text.startswith("<think>"):
         raise SummaryError("the model's reasoning did not finish: raise [llm] max_tokens", text)
     fence = re.fullmatch(r"```[\w-]*\n(.*)\n```", text, flags=re.S)
@@ -65,17 +67,19 @@ def summarize(text, cfg, chat=llm.chat, log=print):
         raise SummaryError("the transcript is empty: nothing to summarize")
     lang = cfg.get("output_language") or "English"
     limit = int(cfg.get("max_input_chars") or 12000)
-    parts = split(text, limit)
-    if len(parts) > 1:
+    material, rounds = text, 0
+    # notes per part; if the joined notes are still too long (a very long meeting), take notes of the notes
+    while len(material) > limit and rounds < 3:
+        rounds += 1
+        parts = split(material, limit)
         notes = []
         for i, part in enumerate(parts, 1):
-            log(f"notes for part {i}/{len(parts)}")
+            log(f"notes, round {rounds}: part {i}/{len(parts)}")
             sys_msg = prompt("notes", part=i, parts=len(parts), output_language=lang)
             notes.append(f"## Part {i} of {len(parts)}\n\n" + clean_reply(chat(cfg, [
                 {"role": "system", "content": sys_msg}, {"role": "user", "content": part}])))
-        material = "Notes taken from each part of the meeting, in order:\n\n" + "\n\n".join(notes)
-    else:
-        material = "Transcript:\n\n" + text
+        material = "\n\n".join(notes)
+    material = ("Notes taken from each part of the meeting, in order:\n\n" if rounds else "Transcript:\n\n") + material
     messages = [{"role": "system", "content": prompt("update", output_language=lang)},
                 {"role": "user", "content": material}]
     log("writing the update")

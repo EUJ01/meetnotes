@@ -16,6 +16,9 @@ class Folder:
     def wants(self, project):
         return True
 
+    def dest(self, project):
+        return f"folder:{self.root}"
+
     def send(self, path, project, date, previous):
         # the root must exist: an unmounted drive must give an error, not a new folder on the wrong disk
         if not self.root.is_dir():
@@ -36,6 +39,9 @@ class Rclone:
 
     def wants(self, project):
         return True
+
+    def dest(self, project):
+        return f"rclone:{self.remote}"
 
     def send(self, path, project, date, previous):
         exe = shutil.which("rclone")

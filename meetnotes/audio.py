@@ -27,11 +27,20 @@ def duration(media):
     probe = _run(["ffprobe", "-v", "error", "-select_streams", "a", "-show_entries", "stream=index", "-of", "csv=p=0", str(media)])
     if probe.returncode or not probe.stdout.strip():
         raise Fail(f"no audio stream found in {media}")
-    fmt = _run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=nw=1:nk=1", str(media)])
-    try:
-        return float(fmt.stdout.strip())
-    except ValueError:
-        raise Fail(f"ffprobe could not read the length of {media}")
+    # browser-made webm and some mkv files have no duration in the header (ffprobe prints N/A): try the audio
+    # stream, then decode the audio once and read the last time stamp
+    for entry in ("format=duration", "stream=duration"):
+        out = _run(["ffprobe", "-v", "error", "-select_streams", "a:0", "-show_entries", entry,
+                    "-of", "default=nw=1:nk=1", str(media)]).stdout.split()
+        try:
+            return float(out[0])
+        except (IndexError, ValueError):
+            pass
+    stamps = re.findall(r"time=(\d+):(\d+):([\d.]+)", _run(["ffmpeg", "-i", str(media), "-vn", "-f", "null", "-"]).stderr)
+    if not stamps:
+        raise Fail(f"could not read the length of {media}")
+    h, m, s = stamps[-1]
+    return int(h) * 3600 + int(m) * 60 + float(s)
 
 
 def cut_points(pauses, total, chunk, min_chunk=MIN_CHUNK):
@@ -48,7 +57,7 @@ def cut_points(pauses, total, chunk, min_chunk=MIN_CHUNK):
 def _levels(media, seconds):
     """(mean volume in dB, pause mid-points). # ponytail: ffmpeg silencedetect, not a speech VAD; steady background
     music or noise can hide the pauses and fall back to hard cuts. Swap in silero-vad if that shows up."""
-    cmd = ["ffmpeg", "-hide_banner", "-nostats", "-i", str(media)] + (["-t", str(seconds)] if seconds else [])
+    cmd = ["ffmpeg", "-hide_banner", "-nostats", "-i", str(media), "-vn"] + (["-t", str(seconds)] if seconds else [])
     found = re.search(r"mean_volume: (-?[\d.]+|-inf)", _run(cmd + ["-af", "volumedetect", "-f", "null", "-"]).stderr)
     if not found or found[1] == "-inf":
         return -91.0, []  # digital silence: no pauses to find

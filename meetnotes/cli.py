@@ -23,14 +23,20 @@ def do_transcribe(media, cfg, ws, out=None, language=None, model=None, dev=None,
     media = Path(media).resolve()
     if not media.is_file():
         raise Fail(f"recording not found: {media}", 2)
-    out = Path(out) if out else ws / "transcripts" / f"{media.stem}.md"
     size, limit = media.stat().st_size, int(seconds or 0)
+    if batch is not None and batch < 1:
+        raise Fail("--batch must be 1 or more", 2)
+    # a test run on the first N seconds gets its own file, so the full run after it does not collide
+    out = Path(out) if out else ws / "transcripts" / (f"{media.stem}.first{limit}s.md" if limit else f"{media.stem}.md")
     if out.exists() and not force:
         meta, _ = transcript.read(out)
-        if (meta.get("source_path"), meta.get("size"), meta.get("limit", "0")) == (str(media), str(size), str(limit)):
+        same = (meta.get("source_path"), meta.get("size"), meta.get("limit", "0")) == (str(media), str(size), str(limit))
+        asked = (language and language != meta.get("language")) or (model and model != meta.get("model"))
+        if same and not asked:
             log(f"transcript exists, skipped (--force redoes it): {out}")
             return out
-        raise Fail(f"{out} belongs to another recording or length. Use --out for a new file, or --force to replace it.", 2)
+        why = "was made with another language or model" if same else "belongs to another recording or length"
+        raise Fail(f"{out} {why}. Use --force to replace it, or --out for a new file.", 2)
     t = cfg["transcribe"]
     lang, used, text = asr.transcribe(
         media, language=language or t["language"], override=model, whisper_model=t["model"], bn_model=t["model_bn"],
@@ -80,7 +86,7 @@ def _target(path, project, date, ws):
     meta, text = transcript.read(path)
     meta.setdefault("source", Path(path).name)
     date = _date(date, meta)
-    return meta, text, date, update.path_for(ws / "projects", project, date, meta["source"])
+    return meta, text, date, update.path_for(ws / "projects", project, date, update.source_id(meta))
 
 
 def do_summarize(path, project, cfg, ws, date=None):
@@ -148,13 +154,17 @@ def doctor(cfg, ws):
              "this machine has a GPU but PyTorch is a CPU-only build: reinstall it from pytorch.org (see README)")
     except ImportError:
         line(False, "PyTorch", "install PyTorch for your GPU (see README), then: pip install .[asr]")
-    try:
-        import transformers
-        line(True, f"transformers {transformers.__version__}")
-    except ImportError:
-        line(False, "transformers", "pip install .[asr]")
-    line(bool(cfg["_file"]), f"config: {cfg['_file'] or 'none (defaults)'}; workspace: {ws}",
-         "copy config.example.toml to config.toml and edit it")
+    for mod in ("transformers", "soundfile", "librosa", "numpy"):
+        try:
+            m = __import__(mod)
+            line(True, f"{mod} {getattr(m, '__version__', '')}")
+        except ImportError:
+            line(False, mod, "pip install .[asr]")
+    if cfg["_file"]:
+        print(f"[ok] config: {cfg['_file']}; workspace: {ws}")
+    else:
+        print(f"[--] no config.toml: defaults (transcription only); workspace: {ws}. "
+              "Copy config.example.toml to config.toml to add an LLM or publishing.")
     llm_cfg = cfg["llm"]
     if llm_cfg["base_url"]:
         from meetnotes import llm
@@ -241,9 +251,7 @@ def dispatch(a, cfg, ws):
             return 0
         return do_publish(cfg, ws, a.project, a.dry_run)
     elif a.cmd == "run":
-        project = update.check_project(a.project)
-        if a.date:
-            update.parse_date(a.date)  # fail now, not after an hour of transcription
+        project = preflight(a, cfg)
         path = do_transcribe(a.media, cfg, ws, None, a.language, a.model, a.device, a.batch, a.seconds, a.force)
         print(path)
         if cfg["clean"]["glossary"] and transcript.read(path)[0].get("language") == "bn":
@@ -253,8 +261,28 @@ def dispatch(a, cfg, ws):
             log(f"no LLM configured: stopping after the transcript. Agent route: meetnotes new-update {path} --project {project}")
             return 0
         print(do_summarize(path, project, cfg, ws, a.date))
+        if a.seconds:
+            log("--seconds is a test run: not published. Publish it by hand with: meetnotes publish")
+            return 0
         return do_publish(cfg, ws, project)
     return 0
+
+
+def preflight(a, cfg):
+    """Settings errors that would otherwise show up only after an hour of transcription."""
+    project = update.check_project(a.project)
+    if a.date:
+        update.parse_date(a.date)
+    if cfg["llm"]["base_url"] and not cfg["llm"]["model"]:
+        raise Fail("[llm] base_url is set but model is empty", 2)
+    g = cfg["clean"]["glossary"]
+    if g and not Path(g).is_file():
+        raise Fail(f"[clean] glossary file not found: {g}", 2)
+    from meetnotes import publish
+    for t in publish.targets(cfg["publish"]):
+        if isinstance(t, publish.Unavailable):
+            log(f"warning: {t.name} will fail: {t.reason}")
+    return project
 
 
 def main(argv=None):

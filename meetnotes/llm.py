@@ -73,9 +73,12 @@ def chat(cfg, messages, opener=urllib.request.urlopen, sleep=time.sleep):
             reason = getattr(e, "reason", e)
             raise LLMError(f"cannot reach {url}: {reason}. Is the server running and base_url right?")
     try:
-        content = data["choices"][0]["message"].get("content")
+        choice = data["choices"][0]
+        content = choice["message"].get("content")
     except (KeyError, IndexError, TypeError, AttributeError):
         raise LLMError(f"{url} sent an unexpected reply: {json.dumps(data)[:300]}")
+    if choice.get("finish_reason") == "length":  # cut off: it can still hold all three headings, so check here
+        raise LLMError(f"the reply was cut off at max_tokens ({body['max_tokens']}): raise [llm] max_tokens")
     if not content or not content.strip():
         raise LLMError(f"{url} sent an empty reply (model {cfg['model']}). Try a larger max_tokens or another model.")
     return content

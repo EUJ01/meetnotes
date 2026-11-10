@@ -9,7 +9,11 @@ from meetnotes import Fail
 from meetnotes.summarize import HEADINGS
 
 PROJECT = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
-SOURCE = re.compile(r"^Source: `([^`]*)`", re.M)
+SOURCE = re.compile(r"^<!-- meetnotes source: (.*) -->$", re.M)  # file name + size: names like zoom_0.mp4 repeat
+
+
+def source_id(meta):
+    return f"{meta.get('source', 'unknown')} {meta.get('size', '')}".strip()
 
 
 def check_project(name):
@@ -30,8 +34,8 @@ def key(date):
 
 
 def path_for(projects_dir, project, date, source):
-    """The file for this meeting. Same date and same source file: the same path (it is replaced, then published as
-    an edit). Same date, another source: a numbered file, _2_ before _update so the publish pattern still matches
+    """The file for this meeting. source = source_id(meta). Same date and same source: the same path (it is
+    replaced, then published as an edit). Same date, another source: a numbered file, _2_ before _update so the publish pattern still matches
     and it sorts above the first one. # ponytail: _10_ sorts above _2_; fine below 10 meetings a day."""
     folder = Path(projects_dir) / check_project(project)
     base = f"{key(date)}_{date.isoformat()}"
@@ -53,7 +57,8 @@ def header(project, date, meta, words, summarizer):
     asr = f" Transcribed with {meta['model']}." if meta.get("model") else ""
     return (f"# {project} update: {date.isoformat()}\n\n"
             f"Source: `{meta.get('source', 'unknown')}` ({minutes}{lang}{words:,} words).{asr} Summary by {summarizer}. "
-            "Machine transcript: check important points against the recording.\n\n")
+            "Machine transcript: check important points against the recording.\n"
+            f"<!-- meetnotes source: {source_id(meta)} -->\n\n")
 
 
 def skeleton():

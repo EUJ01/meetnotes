@@ -38,6 +38,9 @@ class Telegram:
     def wants(self, project):
         return project in self.chats
 
+    def dest(self, project):
+        return f"telegram:{self.chats[project]}"
+
     def call(self, method, fields=None, files=None):
         url = f"{self.api}/bot{self.token}/{method}"
         if files:
@@ -73,6 +76,10 @@ class Telegram:
             except PublishError as e:
                 if "not modified" in str(e):
                     return previous, "unchanged on Telegram"
+                # post a new copy only when the old post cannot be edited; after a timeout or 429 the edit may
+                # have worked, and a second post would duplicate it: fail now, retry on the next publish
+                if not any(k in str(e) for k in ("message to edit not found", "can't be edited")):
+                    raise
             caption += " (revised)"
         msg = self.call("sendDocument", {"chat_id": chat, "caption": caption}, {"document": path})
         return str(msg["message_id"]), "posted a revised copy of" if previous else "posted"
