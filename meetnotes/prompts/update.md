@@ -8,11 +8,11 @@ Return Markdown with exactly these three sections, in this order, and nothing be
 
 ## Summary
 
-3 to 8 bullets. The purpose of the meeting, the main decisions, and the agreed direction. Use sub-bullets for detail. Bold a short label at the start of a bullet when it helps scanning.
+3 to 8 bullets, each line starting with `- `. The purpose of the meeting, the main decisions, and the agreed direction. Use sub-bullets for detail. Bold a short label at the start of a bullet when it helps scanning.
 
 ## To do before the next update
 
-Group the actions under numbered `### 1. Group name` headings, by topic or work stream, most urgent group first. Each action is a checkbox line: `- [ ] action`. Start each action with a verb. Use sub-bullets for details, options or examples.
+Group the actions under numbered `### 1. Group name` headings, by topic or work stream, most urgent group first. Each action is a checkbox line: `- [ ] action`. Start each action with a verb. Use plain sub-bullets for details, options or examples, with no label word in front (not "Detail:").
 
 ## Open questions
 

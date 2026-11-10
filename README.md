@@ -10,7 +10,7 @@ recording ──▶ transcript ──▶ update file ──▶ Telegram / Google
 
 - **Speech-to-text runs on your machine.** NVIDIA, AMD (ROCm), Apple Silicon, or the CPU. Any language Whisper knows, plus a dedicated Bangla model.
 - **Any LLM writes the update.** A local one (LM Studio, Ollama, llama.cpp), a cloud API (OpenAI, OpenRouter, Gemini, Anthropic), or no API at all: a coding agent fills in the file (see [AGENTS.md](AGENTS.md)).
-- **The update file** has a summary, grouped `- [ ]` to-dos, and open questions. See [examples/update.md](examples/update.md), made from the fictional meeting in [examples/transcript.md](examples/transcript.md).
+- **The update file** has a summary, grouped `- [ ]` to-dos, and open questions. See [examples/update.md](examples/update.md), made from the fictional meeting in [examples/transcript.md](examples/transcript.md) by a small local model (Qwen 3.5 9B in LM Studio), unedited.
 - **Optional publishing** to a Telegram channel per project, to a Google Drive folder, or to any rclone remote. Changed files are re-sent; Telegram replaces the old post in place.
 
 ## Install
@@ -98,6 +98,7 @@ api_key_env = ""            # for a cloud API: the NAME of the environment varia
 | Google Gemini | `https://generativelanguage.googleapis.com/v1beta/openai` | `api_key_env = "GEMINI_API_KEY"` |
 | Anthropic | `https://api.anthropic.com/v1` | `api_key_env = "ANTHROPIC_API_KEY"` |
 
+- Tested with Qwen 3.5 9B in LM Studio: a 412-word meeting took about 2 minutes. On a 26-minute Bangla meeting it got the main decisions, but garbled some technical terms. Larger models do better: always check the update against the recording.
 - Long transcripts are noted part by part, then merged (`max_input_chars`, default 12,000). This matters for local models with a small context window.
 - **Ollama** silently cuts prompts longer than its context window. Raise it, for example with the environment variable `OLLAMA_CONTEXT_LENGTH=16384`, or lower `max_input_chars`.
 - Reasoning models are fine: their `<think>` blocks are removed. If the reasoning eats the whole answer, raise `max_tokens`.
@@ -150,6 +151,7 @@ remote = "gdrive:meeting-notes"
 - `PyTorch ... CPU-only` on a machine with a GPU: reinstall PyTorch for your GPU (Install, step 3).
 - The transcript is in the wrong language: run it again with `--language <code> --force`.
 - `... belongs to another recording or length`: a transcript with that name exists. Use `--out` or `--force`.
+- LM Studio on Windows says `listen EACCES: permission denied 127.0.0.1:1234`: Windows reserved that port (Hyper-V, WSL and Docker reserve port ranges). Check with `netsh interface ipv4 show excludedportrange protocol=tcp`, pick a port outside the ranges (for example 8765) in LM Studio's server settings, and use it in `base_url`.
 - Windows with an AMD GPU: the ROCm runtime can hang when Python exits. meetnotes ends its own process after the work is done to avoid this.
 
 ## Development
