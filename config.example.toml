@@ -24,6 +24,8 @@ max_tokens = 4000
 timeout = 300                                  # the longest silence allowed, in seconds (replies are streamed)
 max_input_chars = 12000                        # longer transcripts are noted part by part first
 output_language = "English"
+# reasoning_effort = ""                       # sent with every request when set: none, low, medium, high
+reasoning_effort_light = ""                    # translation and minutes; "none" for reasoning models (LM Studio Qwen: 3 min -> 1 s a sentence)
 translate = "auto"                             # auto: a non-English transcript is first translated to English in short parts
 review = true                                  # a review agent checks the draft against the transcript (needs tool calling)
 

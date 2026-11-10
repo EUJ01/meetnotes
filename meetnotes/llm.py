@@ -134,6 +134,8 @@ def complete(cfg, messages, tools=None, opener=OPEN, sleep=time.sleep, log=_stde
         body["temperature"] = cfg["temperature"]
     if tools:
         body["tools"] = tools
+    if cfg.get("reasoning_effort"):
+        body["reasoning_effort"] = cfg["reasoning_effort"]
     timeout = cfg.get("timeout") or 300
     for attempt in range(RETRIES + 1):
         try:
@@ -142,6 +144,9 @@ def complete(cfg, messages, tools=None, opener=OPEN, sleep=time.sleep, log=_stde
             break
         except urllib.error.HTTPError as e:  # before URLError: HTTPError is a subclass of it
             detail = e.read().decode("utf-8", "replace")[:300]
+            if e.code == 400 and "reasoning_effort" in body and "reason" in detail.lower():
+                log(f"warning: the server rejected reasoning_effort={body.pop('reasoning_effort')!r}; sending without it")
+                continue
             if (e.code == 429 or e.code >= 500) and attempt < RETRIES:
                 sleep(_wait(e, attempt))
                 continue

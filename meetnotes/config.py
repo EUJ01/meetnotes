@@ -25,6 +25,8 @@ DEFAULTS = {
         "timeout": 300,
         "max_input_chars": 12000,  # longer transcripts are summarized in parts first
         "output_language": "English",
+        "reasoning_effort": "",  # sent with every request when set (OpenAI-style: none, low, medium, high)
+        "reasoning_effort_light": "",  # sent for translation and minutes; "none" makes reasoning models fast there
         "translate": "auto",  # auto: translate a transcript that is not in English first (when output is English)
         "review": True,  # a review agent checks the draft against the transcript with tools (needs tool calling)
     },

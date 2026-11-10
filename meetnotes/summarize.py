@@ -70,6 +70,12 @@ def background_block(background):
             "never report it as something that was said.\n<background>\n" + background.strip() + "\n</background>\n")
 
 
+def light(cfg):
+    """Settings for the mechanical steps (translation, minutes): reasoning_effort_light, if set, replaces
+    reasoning_effort. A reasoning model can spend minutes thinking about one sentence of translation."""
+    return {**cfg, "reasoning_effort": cfg.get("reasoning_effort_light") or cfg.get("reasoning_effort") or ""}
+
+
 def summarize(text, cfg, chat=llm.chat, log=print, background="", notes_out=None):
     """Return the update body (the three sections). Long transcripts are noted part by part, then merged.
     background = project context and known terms (and the previous update); notes_out = a path to keep the minutes."""
@@ -89,7 +95,7 @@ def summarize(text, cfg, chat=llm.chat, log=print, background="", notes_out=None
         for i, part in enumerate(parts, 1):
             log(f"notes, round {rounds}: part {i}/{len(parts)}")
             sys_msg = prompt("notes", part=i, parts=len(parts), output_language=lang, context=ctx)
-            notes.append(f"## Part {i} of {len(parts)}\n\n" + clean_reply(chat(cfg, [
+            notes.append(f"## Part {i} of {len(parts)}\n\n" + clean_reply(chat(light(cfg), [
                 {"role": "system", "content": sys_msg}, {"role": "user", "content": part}])))
         material = "\n\n".join(notes)
         if notes_out:  # the project folder may not exist yet on a first run
@@ -129,5 +135,5 @@ def translate(text, cfg, chat=llm.chat, log=print, background=""):
     for i, part in enumerate(parts, 1):
         log(f"translating part {i}/{len(parts)}")
         sys_msg = prompt("translate", part=i, parts=len(parts), output_language=lang, context=ctx)
-        out.append(clean_reply(chat(cfg, [{"role": "system", "content": sys_msg}, {"role": "user", "content": part}])))
+        out.append(clean_reply(chat(light(cfg), [{"role": "system", "content": sys_msg}, {"role": "user", "content": part}])))
     return "\n\n".join(out)

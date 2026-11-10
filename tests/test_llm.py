@@ -112,6 +112,17 @@ class Chat(unittest.TestCase):
         finally:
             srv.close()
 
+    def test_reasoning_effort_and_fallback(self):
+        srv = FakeServer([(400, {"error": {"message": "Unrecognized argument: reasoning_effort"}}, None), chat_reply("ok")])
+        try:
+            logs = []
+            self.assertEqual(llm.chat(cfg(srv.url, reasoning_effort="none"), [], sleep=self.sleep, log=logs.append), "ok")
+            self.assertEqual(json.loads(srv.requests[0]["body"])["reasoning_effort"], "none")
+            self.assertNotIn("reasoning_effort", json.loads(srv.requests[1]["body"]))
+            self.assertIn("rejected reasoning_effort", logs[0])
+        finally:
+            srv.close()
+
     def test_models(self):
         srv = FakeServer([(200, {"data": [{"id": "a"}, {"id": "m"}]}, None)])
         try:
