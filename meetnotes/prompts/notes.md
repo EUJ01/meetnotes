@@ -10,8 +10,8 @@ What was discussed, in the order it came up. One bullet per topic, with the key 
 ### Decisions and priorities
 Every decision, with its reason if one was given. Keep the order and priority words exactly: first, then, later, the main line, only if time allows, dropped, postponed.
 
-### Actions
-Every task someone should do. Keep who and when only if the speakers say it (next week, in two weeks, before the next meeting).
+### Plans and to-dos
+Every piece of work that was proposed, suggested or agreed, also when it is phrased as advice ("you could", "we should", "first do X, then Y", "show that ..."). In many meetings the to-do list is mostly suggestions. Keep the details the speakers attached: steps, methods, tools, datasets, papers, who checks the result, and why. Keep who and when only if the speakers say it (next week, in two weeks, before the next meeting).
 
 ### Names and targets
 Names that came up (people, teams, products, documents, tools, places, events), and numbers, amounts and dates, each with a few words on why it came up.
@@ -21,7 +21,7 @@ Points you could not understand, and terms you are not sure you heard right.
 
 Rules:
 - Keep only what this part says. Never invent facts, names, owners, numbers or deadlines.
-- Fix a word or name that is clearly misheard when the surrounding talk (or the background, if given) makes the right one obvious. If you are not sure, write it as heard and add `(?)`.
+- Fix a word or name that is clearly misheard when the surrounding talk (or the background, if given) makes the right one obvious. If you are not sure, write it as heard and add `(?)`. Never guess what an unclear term or acronym stands for: an invented expansion reads like a fact.
 - Keep hedges ("maybe", "if time allows").
 - The part may start or end in the middle of a sentence. Ignore a fragment you cannot understand.
 - If a heading has nothing, write `- None.` under it.

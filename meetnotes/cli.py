@@ -100,10 +100,10 @@ def _wants_translation(llm_cfg, meta):
 
 def _translated(path, meta, text, cfg, background):
     """The translation, cached next to the transcript as <name>.translated.md. It is reused while the transcript
-    text and the LLM model are the same."""
+    text, the LLM model and the project background (context, terms) are the same."""
     import hashlib
     from meetnotes import summarize
-    digest = hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
+    digest = hashlib.sha256((text + "\0" + background).encode("utf-8")).hexdigest()[:16]
     cache = Path(path).with_name(Path(path).stem + ".translated.md")
     if cache.exists():
         old, english = transcript.read(cache)
@@ -128,13 +128,15 @@ def do_summarize(path, project, cfg, ws, date=None):
         background += "\nThe previous update of this project, for context only:\n" + prev
     try:
         work = _translated(path, meta, text, cfg, background) if _wants_translation(cfg["llm"], meta) else text
-        body = summarize.summarize(work, cfg["llm"], log=log, background=background,
-                                   notes_out=dest.with_name(dest.name[:-3] + ".minutes.md"))
+        minutes = dest.with_name(dest.name[:-3] + ".minutes.md")
+        minutes.unlink(missing_ok=True)  # a stale file from an earlier run must not reach the review
+        body = summarize.summarize(work, cfg["llm"], log=log, background=background, notes_out=minutes)
         if cfg["llm"]["review"]:
             from meetnotes import agent
             dest.parent.mkdir(parents=True, exist_ok=True)
             dest.with_name(dest.name[:-3] + ".draft.md").write_text(body + "\n", encoding="utf-8")
-            body = agent.review(body, work, cfg["llm"], background=background, log=log)
+            body = agent.review(body, work, cfg["llm"], background=background, log=log,
+                                minutes=minutes.read_text(encoding="utf-8") if minutes.exists() else "")
     except summarize.SummaryError as e:
         if e.reply:
             failed = dest.with_name(dest.name + ".failed.md")

@@ -12,7 +12,7 @@ Return Markdown with exactly these three sections, in this order, and nothing be
 
 ## To do before the next update
 
-Group the actions under numbered `### 1. Group name` headings, in the order the meeting agreed: the work to do first goes in group 1. Each action is a checkbox line: `- [ ] action`. Start each action with a verb. Use plain sub-bullets for details, options or examples, with no label word in front (not "Detail:").
+Group the actions under numbered `### 1. Group name` headings, in the order the meeting agreed: the work to do first goes in group 1. Name each group after the work itself (for example "Pilot experiment" or "Data pipeline"), never with a generic label such as "Strategy", "Implementation" or "Research". A decision about the order of work (do X first, Y later) also puts X and Y in the to-do list, as groups in that order. If you were given minutes, every item under their "Plans and to-dos" and "Decisions" headings must appear here: merge duplicates, but drop nothing. Each action is a checkbox line: `- [ ] action`. Start each action with a verb. Use plain sub-bullets for details, options or examples, with no label word in front (not "Detail:").
 
 ## Open questions
 
@@ -24,6 +24,7 @@ Rules:
 - Keep the names, numbers and targets the speakers gave: products, documents, tools, places, amounts, dates.
 - Say what was dropped or postponed.
 - Keep hedges: "maybe", "if time allows" and "we think" stay as they are.
-- Fix a word or name that is clearly misheard when the surrounding talk (or the background, if given) makes the right one obvious. If you are not sure, keep it as heard and add `(?)`.
+- Fix a word or name that is clearly misheard when the surrounding talk (or the background, if given) makes the right one obvious. If you are not sure, keep it as heard and add `(?)`. Never guess what an unclear term or acronym stands for: an invented expansion reads like a fact.
+- Keep the concrete details of each action as sub-bullets: steps, methods, tools, datasets, papers, and who checks the result. A to-do the team cannot act on without the recording is too vague.
 - Be concise. Merge repeated points. Leave out small talk.
 - Do not add a title, a date, a source line or a closing remark. The tool writes those.

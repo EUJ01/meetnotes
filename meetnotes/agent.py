@@ -60,7 +60,7 @@ def run_tool(call, parts):
     return f"Unknown tool {call['name']}."
 
 
-def review(draft, transcript, cfg, background="", log=print, complete=llm.complete, budget=BUDGET):
+def review(draft, transcript, cfg, background="", log=print, complete=llm.complete, budget=BUDGET, minutes=""):
     """Return the corrected update body. If the review fails in any way, the draft is kept: the review must never
     make the result worse than no review."""
     parts = split(transcript, PART_CHARS, overlap=0)
@@ -68,7 +68,8 @@ def review(draft, transcript, cfg, background="", log=print, complete=llm.comple
                   "points that matter most for the to-do list.")
     system = prompt("review", parts=len(parts), context=background_block(background), tools=tools_text,
                     output_language=cfg.get("output_language") or "English")
-    messages = [{"role": "system", "content": system}, {"role": "user", "content": "Draft update:\n\n" + draft}]
+    given = f"Minutes taken from the meeting, part by part:\n\n{minutes.strip()}\n\n" if minutes.strip() else ""
+    messages = [{"role": "system", "content": system}, {"role": "user", "content": given + "Draft update:\n\n" + draft}]
     used = 0
     try:
         for _ in range(budget + 2):

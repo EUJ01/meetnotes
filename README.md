@@ -111,11 +111,12 @@ api_key_env = ""            # for a cloud API: the NAME of the environment varia
 
 ### The review agent
 
-After the first draft, a review agent checks it against the transcript. It has two tools: `search_transcript` (find passages by words) and `read_part` (read one part in full). It removes to-dos the transcript does not support, adds actions and time frames the draft missed, puts the work in the agreed order, and fixes misheard names.
+Optional (`review = true` in `[llm]`). After the first draft, a review agent checks it against the transcript and the minutes. It has two tools: `search_transcript` (find passages by words) and `read_part` (read one part in full). It adds actions and time frames the draft missed, marks unsupported to-dos with `(?)`, puts the work in the agreed order, and fixes misheard names.
 
 - It needs a model and server with tool calling (LM Studio, Ollama, llama.cpp, vLLM and the cloud APIs support it for most recent models).
-- It uses at most 6 tool calls. If anything goes wrong (no tool support, a bad reply), the draft is kept: the review never makes the result worse.
-- The draft before the review is kept as `.draft.md`, next to the update. Turn the agent off with `review = false` in `[llm]`.
+- It uses at most 6 tool calls. If anything goes wrong (no tool support, a bad reply), the draft is kept.
+- It is off by default. In our test with a 9B local model it scored no higher than the draft and twice added a wrong claim (a reversed priority, an invented confirmation). Try it with a larger model.
+- The draft before the review is kept as `.draft.md`, next to the update.
 - Why: summarizing in parts loses links between parts, and each merge step can add made-up content. Giving the model the original text back at the end reduces that (Ou and Lapata, ACL 2025).
 
 ### Help the model with context (optional)
