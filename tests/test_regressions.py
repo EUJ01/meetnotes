@@ -124,5 +124,15 @@ class Security(unittest.TestCase):
             del os.environ["MEETNOTES_TEST_KEY"]
 
 
+class FirstRun(unittest.TestCase):
+    def test_minutes_saved_into_a_new_folder(self):
+        with tempfile.TemporaryDirectory() as d:
+            out = Path(d) / "projects" / "new" / "x.minutes.md"
+            summarize.summarize(" ".join(f"Sentence {i}." for i in range(300)), {"max_input_chars": 1000},
+                                chat=lambda c, m: BODY if "three sections" in m[0]["content"] else "- note",
+                                log=lambda m: None, notes_out=out)
+            self.assertTrue(out.exists())
+
+
 if __name__ == "__main__":
     unittest.main()

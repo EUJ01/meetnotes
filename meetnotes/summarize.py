@@ -92,7 +92,8 @@ def summarize(text, cfg, chat=llm.chat, log=print, background="", notes_out=None
             notes.append(f"## Part {i} of {len(parts)}\n\n" + clean_reply(chat(cfg, [
                 {"role": "system", "content": sys_msg}, {"role": "user", "content": part}])))
         material = "\n\n".join(notes)
-        if notes_out:
+        if notes_out:  # the project folder may not exist yet on a first run
+            Path(notes_out).parent.mkdir(parents=True, exist_ok=True)
             Path(notes_out).write_text(material + "\n", encoding="utf-8")
             log(f"minutes kept in {notes_out}")
     material = ("Minutes taken from each part of the meeting, in order:\n\n" if rounds else "Transcript:\n\n") + material
