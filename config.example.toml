@@ -1,0 +1,39 @@
+# Copy this file to config.toml and edit it. config.toml is git-ignored.
+# Secrets never go in this file: it names the environment variables that hold them.
+
+# transcripts/, projects/ and .meetnotes/ are created here (relative to this file)
+workspace = "."
+
+[transcribe]
+language = "auto"                              # auto, or a code such as en, de, bn
+model = "openai/whisper-large-v3-turbo"        # any Hugging Face Whisper model; openai/whisper-small is faster on a CPU
+model_bn = "SayedShaun/Qwen3-ASR-0.6B-Bengali" # used for Bangla (Whisper is poor at it)
+device = "auto"                                # auto, cuda (NVIDIA and AMD ROCm), mps (Apple), cpu
+batch = 8                                      # chunks per GPU batch; halves itself on out-of-memory
+
+[clean]
+glossary = ""                                  # Bangla only, e.g. "glossary.json" (relative to this file; see glossary.example.json)
+
+[llm]
+# Any OpenAI-compatible endpoint. Leave base_url empty to use a coding agent instead (see AGENTS.md).
+base_url = "http://localhost:1234/v1"          # LM Studio. Ollama: http://localhost:11434/v1. More in README.
+model = "qwen3-8b"                             # the model name your server or provider uses
+api_key_env = ""                               # e.g. "OPENAI_API_KEY": the NAME of the variable, not the key
+max_tokens = 4000
+# temperature = 0.2                            # sent only when set: some reasoning models reject it
+timeout = 300                                  # seconds per request
+max_input_chars = 12000                        # longer transcripts are noted part by part first
+output_language = "English"
+
+[publish.telegram]
+token_env = "TELEGRAM_BOT_TOKEN"               # the variable that holds the bot token
+
+[publish.telegram.chats]
+# project = "chat id"; find ids with: meetnotes publish --list-chats
+# demo = "-100..."                             # channel ids start with -100
+
+[publish.folder]
+path = ""                                      # e.g. "G:/My Drive/meeting-notes" (Google Drive for desktop); must exist
+
+[publish.rclone]
+remote = ""                                    # e.g. "gdrive:meeting-notes" (run `rclone config` first)

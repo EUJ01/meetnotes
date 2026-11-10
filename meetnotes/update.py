@@ -1,0 +1,68 @@
+"""Update files: projects/<project>/<key>_<YYYY-MM-DD>[_<n>]_update.md, where key = 99999999 minus the date as
+YYYYMMDD, so the newest update sorts first in any file list."""
+import datetime as dt
+import os
+import re
+from pathlib import Path
+
+from meetnotes import Fail
+from meetnotes.summarize import HEADINGS
+
+PROJECT = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
+SOURCE = re.compile(r"^Source: `([^`]*)`", re.M)
+
+
+def check_project(name):
+    if not name or not PROJECT.match(name) or ".." in name:
+        raise Fail(f"project name '{name}': use letters, digits, '.', '_' or '-' (no spaces or slashes)", 2)
+    return name
+
+
+def parse_date(text):
+    try:
+        return dt.date.fromisoformat(text)
+    except (TypeError, ValueError):
+        raise Fail(f"date '{text}': use YYYY-MM-DD", 2)
+
+
+def key(date):
+    return f"{99999999 - int(date.strftime('%Y%m%d')):08d}"
+
+
+def path_for(projects_dir, project, date, source):
+    """The file for this meeting. Same date and same source file: the same path (it is replaced, then published as
+    an edit). Same date, another source: a numbered file, _2_ before _update so the publish pattern still matches
+    and it sorts above the first one. # ponytail: _10_ sorts above _2_; fine below 10 meetings a day."""
+    folder = Path(projects_dir) / check_project(project)
+    base = f"{key(date)}_{date.isoformat()}"
+    n = 1
+    while True:
+        p = folder / (f"{base}_update.md" if n == 1 else f"{base}_{n}_update.md")
+        if not p.exists():
+            return p
+        m = SOURCE.search(p.read_text(encoding="utf-8"))
+        if m and m[1] == source:
+            return p
+        n += 1
+
+
+def header(project, date, meta, words, summarizer):
+    """The facts the LLM must not state: written by code. Only the file name of the source goes out, never its path."""
+    minutes = f"{float(meta['duration']) / 60:.0f} min, " if meta.get("duration") else ""
+    lang = f"{meta['language']}, " if meta.get("language") else ""
+    asr = f" Transcribed with {meta['model']}." if meta.get("model") else ""
+    return (f"# {project} update: {date.isoformat()}\n\n"
+            f"Source: `{meta.get('source', 'unknown')}` ({minutes}{lang}{words:,} words).{asr} Summary by {summarizer}. "
+            "Machine transcript: check important points against the recording.\n\n")
+
+
+def skeleton():
+    return "\n\n".join(f"{h}\n\n" for h in HEADINGS).rstrip() + "\n"
+
+
+def write(path, text):
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(text.rstrip() + "\n", encoding="utf-8")
+    os.replace(tmp, path)

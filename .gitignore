@@ -1,0 +1,29 @@
+# your settings and secrets
+config.toml
+.env
+
+# pipeline outputs and state
+transcripts/
+projects/
+.meetnotes/
+
+# recordings
+*.mp4
+*.mkv
+*.mov
+*.avi
+*.webm
+*.m4v
+*.mp3
+*.wav
+*.m4a
+*.flac
+*.ogg
+
+# Python
+__pycache__/
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
