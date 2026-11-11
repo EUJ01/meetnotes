@@ -19,14 +19,18 @@ FIELDS = ["source", "source_path", "size", "recorded", "duration", "limit", "lan
           "translated_from", "translated_by"]  # the last two: on a translation, the hash of the text and the LLM
 
 
-def write(path, meta, text):
-    """Write atomically, so a crash never leaves half a transcript that looks complete."""
+def save(path, text):
+    """Write atomically (temp file, then rename), so a crash never leaves half a file that looks complete."""
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    head = "".join(f"{k}: {meta[k]}\n" for k in FIELDS if k in meta)
     tmp = path.with_name(path.name + ".tmp")
-    tmp.write_text(f"---\n{head}---\n{text.strip()}\n", encoding="utf-8")
+    tmp.write_text(text, encoding="utf-8")
     os.replace(tmp, path)
+
+
+def write(path, meta, text):
+    head = "".join(f"{k}: {meta[k]}\n" for k in FIELDS if k in meta)
+    save(path, f"---\n{head}---\n{text.strip()}\n")
 
 
 def read(path):

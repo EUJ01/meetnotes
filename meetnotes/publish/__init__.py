@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 
 from meetnotes import Fail
+from meetnotes.transcript import save
 
 
 class PublishError(Fail):
@@ -28,10 +29,7 @@ class Ledger:
 
     def set(self, rel, dest, digest, msg_id):
         self.rows[(rel, dest)] = (digest, msg_id or "")
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        tmp = self.path.with_name(self.path.name + ".tmp")
-        tmp.write_text("".join(f"{r}\t{d}\t{t}\t{m}\n" for (r, t), (d, m) in sorted(self.rows.items())), encoding="utf-8")
-        os.replace(tmp, self.path)
+        save(self.path, "".join(f"{r}\t{d}\t{t}\t{m}\n" for (r, t), (d, m) in sorted(self.rows.items())))
 
 
 class Unavailable:

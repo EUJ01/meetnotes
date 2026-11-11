@@ -1,12 +1,12 @@
 """Update files: projects/<project>/<key>_<YYYY-MM-DD>[_<n>]_update.md, where key = 99999999 minus the date as
 YYYYMMDD, so the newest update sorts first in any file list."""
 import datetime as dt
-import os
 import re
 from pathlib import Path
 
 from meetnotes import Fail
 from meetnotes.summarize import HEADINGS
+from meetnotes.transcript import save
 
 PROJECT = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 SOURCE = re.compile(r"^<!-- meetnotes source: (.*) -->$", re.M)  # file name + size: names like zoom_0.mp4 repeat
@@ -66,11 +66,7 @@ def skeleton():
 
 
 def write(path, text):
-    path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_name(path.name + ".tmp")
-    tmp.write_text(text.rstrip() + "\n", encoding="utf-8")
-    os.replace(tmp, path)
+    save(path, text.rstrip() + "\n")
 
 
 def previous(projects_dir, project, date, limit=6000):

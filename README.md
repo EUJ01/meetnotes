@@ -52,19 +52,19 @@ meetnotes publish
 
 ## Which LLM
 
-Tested on a real 26-minute meeting, the best local setup was **Ternary Bonsai 2 27B in LM Studio with reasoning off**: 8.6 GB, about 6 minutes. Full comparison and settings: [docs/llm.md](docs/llm.md).
+Tested on a real 26-minute meeting, the best local setup was **Ternary Bonsai 2 27B in LM Studio with reasoning off**: 8.6 GB, about 6 minutes. Full comparison and settings: [docs/guide.md](docs/guide.md#which-local-model).
 
 ## More
 
 | Topic | Read |
 |---|---|
-| LLM providers, model comparison, review agent, project context | [docs/llm.md](docs/llm.md) |
-| Speech models, languages, Bangla clean-up | [docs/speech-to-text.md](docs/speech-to-text.md) |
-| File names, Telegram, Google Drive, rclone | [docs/publishing.md](docs/publishing.md) |
-| Errors, running the tests | [docs/troubleshooting.md](docs/troubleshooting.md) |
+| LLM providers, model comparison, review agent, project context | [The LLM](docs/guide.md#the-llm) |
+| Speech models, languages, Bangla clean-up | [Speech-to-text](docs/guide.md#speech-to-text) |
+| File names, Telegram, Google Drive, rclone | [Publishing](docs/guide.md#update-files-and-publishing) |
+| Errors, running the tests | [Troubleshooting](docs/guide.md#troubleshooting) |
 | Using a coding agent instead of an API | [AGENTS.md](AGENTS.md) |
-| Secrets and privacy | [SECURITY.md](SECURITY.md) |
+| Secrets and privacy | [Security](docs/guide.md#security) |
 
 ## License
 
-MIT, see [LICENSE](LICENSE). The speech models have their own licenses ([docs/speech-to-text.md](docs/speech-to-text.md)).
+MIT, see [LICENSE](LICENSE). The speech models have their own licenses ([guide](docs/guide.md#speech-to-text)).

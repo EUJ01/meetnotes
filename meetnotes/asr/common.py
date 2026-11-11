@@ -10,10 +10,6 @@ def collapse_loops(text):
     return LOOP.sub(r"\1", text)
 
 
-def is_oom(err):
-    return "out of memory" in str(err).lower()  # CUDA and HIP both say it; OutOfMemoryError is a RuntimeError
-
-
 def run_batches(items, batch, fn, empty_cache, log):
     """fn(list) -> list of the same length. On a GPU out-of-memory error, halve the batch and retry that part."""
     out, i = [], 0
@@ -22,7 +18,7 @@ def run_batches(items, batch, fn, empty_cache, log):
         try:
             res = fn(part)
         except RuntimeError as e:
-            if not is_oom(e) or batch == 1:
+            if "out of memory" not in str(e).lower() or batch == 1:  # CUDA and HIP both say it
                 raise
             batch //= 2
             empty_cache()
