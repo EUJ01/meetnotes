@@ -14,7 +14,7 @@
    ```
    git clone https://github.com/EUJ01/meetnotes && cd meetnotes
    python -m venv .venv
-   .venv\Scriptsctivate          # Windows
+   .venv\Scripts\activate          # Windows
    source .venv/bin/activate       # macOS, Linux
    ```
 3. Install PyTorch for your hardware **first**. Plain `pip install torch` gives a CPU-only build on Windows.
