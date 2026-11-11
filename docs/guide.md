@@ -1,10 +1,42 @@
 # meetnotes guide
 
+- [Install](#install)
 - [The LLM](#the-llm)
 - [Speech-to-text](#speech-to-text)
 - [Update files and publishing](#update-files-and-publishing)
 - [Troubleshooting](#troubleshooting)
 - [Security](#security)
+
+## Install
+
+1. Install ffmpeg: `winget install Gyan.FFmpeg` (Windows), `brew install ffmpeg` (macOS), `sudo apt install ffmpeg` (Linux).
+2. Clone and make a virtual environment:
+   ```
+   git clone https://github.com/EUJ01/meetnotes && cd meetnotes
+   python -m venv .venv
+   .venv\Scriptsctivate          # Windows
+   source .venv/bin/activate       # macOS, Linux
+   ```
+3. Install PyTorch for your hardware **first**. Plain `pip install torch` gives a CPU-only build on Windows.
+   - NVIDIA, or AMD on Linux: the command from the selector at <https://pytorch.org/get-started/locally/>.
+   - AMD on Windows: AMD's ROCm PyTorch wheels. Tested: PyTorch 2.9.1 with ROCm 7.2 on a Radeon RX 9060 XT.
+   - Apple Silicon: `pip install torch` (includes MPS).
+   - No GPU: `pip install torch` works, but expect about 10 times slower than real time with the default model.
+4. `pip install .[asr]`, then `meetnotes doctor`. Each failed check prints a fix.
+
+Only need the LLM and publishing steps (you already have transcripts)? `pip install .` is enough. It has no dependencies.
+
+The steps of `meetnotes run`, one by one:
+
+```
+meetnotes transcribe meeting.mp4 --seconds 60      # a quick test: transcripts/meeting.first60s.md
+meetnotes transcribe meeting.mp4                   # -> transcripts/meeting.md
+meetnotes summarize transcripts/meeting.md --project weekly --date 2026-10-20
+meetnotes publish --dry-run
+meetnotes publish
+```
+
+The first run downloads the speech model (about 1.6 GB for Whisper, 1.5 GB for the Bangla model).
 
 ## The LLM
 
@@ -148,7 +180,7 @@ remote = "gdrive:meeting-notes"
 ## Troubleshooting
 
 - Start with `meetnotes doctor`. Each failed check prints a fix.
-- `PyTorch ... CPU-only` on a machine with a GPU: reinstall PyTorch for your GPU (README, Install, step 3).
+- `PyTorch ... CPU-only` on a machine with a GPU: reinstall PyTorch for your GPU ([Install](#install), step 3).
 - The transcript is in the wrong language: run it again with `--language <code> --force`.
 - `... belongs to another recording or length`: a transcript with that name exists. Use `--out` or `--force`.
 - LM Studio on Windows says `listen EACCES: permission denied 127.0.0.1:1234`: Windows reserved that port (Hyper-V, WSL and Docker reserve port ranges). Check with `netsh interface ipv4 show excludedportrange protocol=tcp`, pick a port outside the ranges (for example 8765) in LM Studio's server settings, and use it in `base_url`.
