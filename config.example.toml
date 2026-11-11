@@ -16,7 +16,7 @@ glossary = ""                                  # Bangla only, e.g. "glossary.jso
 
 [llm]
 # Any OpenAI-compatible endpoint. Leave base_url empty to use a coding agent instead (see AGENTS.md).
-base_url = "http://localhost:1234/v1"          # LM Studio. Ollama: http://localhost:11434/v1. More in README.
+base_url = "http://localhost:1234/v1"          # LM Studio. Ollama: http://localhost:11434/v1. More in docs/llm.md.
 model = "qwen3-8b"                             # the model name your server or provider uses
 api_key_env = ""                               # e.g. "OPENAI_API_KEY": the NAME of the variable, not the key
 max_tokens = 4000
@@ -27,7 +27,7 @@ output_language = "English"
 # reasoning_effort = ""                       # sent with every request when set: none, low, medium, high
 reasoning_effort_light = ""                    # translation and minutes; "none" for reasoning models (LM Studio Qwen: 3 min -> 1 s a sentence)
 translate = "auto"                             # auto: a non-English transcript is first translated to English in short parts
-review = false                                 # true: a review agent checks the draft against the transcript (needs tool calling; see README)
+review = false                                 # true: a review agent checks the draft against the transcript (needs tool calling; see docs/llm.md)
 
 # Optional, per project: what the project is about and names the speech model mishears.
 # [projects.weekly]

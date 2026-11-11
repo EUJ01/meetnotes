@@ -29,7 +29,7 @@ DEFAULTS = {
         "reasoning_effort_light": "",  # sent for translation and minutes; "none" makes reasoning models fast there
         "translate": "auto",  # auto: translate a transcript that is not in English first (when output is English)
         "review": False,  # a review agent checks the draft against the transcript with tools (needs tool calling).
-        # Off by default: with a 9B local model it added errors and no points (README, "The review agent")
+        # Off by default: with a 9B local model it added errors and no points (docs/llm.md, "The review agent")
     },
     # per project: context = what the project is about, terms = names the speech model mishears. Both help the LLM
     # read the transcript. [projects.weekly] context = "..." terms = ["GRPO", "LangChain"]
