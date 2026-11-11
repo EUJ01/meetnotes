@@ -75,7 +75,7 @@ def review(draft, transcript, cfg, background="", log=print, complete=llm.comple
         for _ in range(budget + 2):
             offer = TOOLS if used < budget else None
             reply = complete(cfg, messages, tools=offer, log=log)
-            calls = reply["tool_calls"] if offer else []
+            calls = reply["tool_calls"][:budget - used] if offer else []  # one reply can ask for several calls
             if not calls:
                 body = clean_reply(reply["content"])
                 if missing(body):

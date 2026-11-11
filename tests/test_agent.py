@@ -42,6 +42,13 @@ class Review(unittest.TestCase):
         self.assertIsNone(sent[-1]["tools"])
         self.assertIn("No more tool calls", sent[-1]["messages"][-1]["content"])
 
+    def test_parallel_calls_capped_at_budget(self):
+        three = {"content": "", "tool_calls": [{"id": "", "name": "read_part", "arguments": '{"n": 1}'}] * 3}
+        complete, sent = scripted([three, {"content": BODY, "tool_calls": []}])
+        agent.review(BODY, TRANSCRIPT, {}, complete=complete, log=lambda m: None, budget=2)
+        self.assertEqual(len([m for m in sent[-1]["messages"] if m["role"] == "tool"]), 2)
+        self.assertIsNone(sent[-1]["tools"])
+
     def test_bad_answer_keeps_draft(self):
         complete, _ = scripted([{"content": "I think it is fine.", "tool_calls": []}])
         self.assertEqual(agent.review(BODY, TRANSCRIPT, {}, complete=complete, log=lambda m: None), BODY)
